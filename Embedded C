@@ -1,0 +1,138 @@
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 16 chars and 2 line display
+
+#include <ESP32Servo.h>
+Servo myservo;
+Servo myservo1;  
+int metal;
+int ir,i;
+int wet=27;
+int f,m_f,w_f;
+void setup() {
+  Serial.begin(9600);
+  pinMode(metal,INPUT);
+  pinMode(ir,INPUT);
+  pinMode(wet,INPUT_PULLUP);
+  lcd.init();                      // initialize the lcd 
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0,0);
+  lcd.print("WASTE SEGREGATION");
+ 
+  ESP32PWM::allocateTimer(0);
+  ESP32PWM::allocateTimer(1);
+  ESP32PWM::allocateTimer(2);
+  ESP32PWM::allocateTimer(3);
+  
+  myservo.setPeriodHertz(50);    
+  myservo.attach(25,500,2500);
+  myservo1.setPeriodHertz(50);    
+  myservo1.attach(26,500,2500);
+ 
+
+}
+
+void loop() {
+
+  //-----------------ir=1----metal=0----------wet=1---------------------
+  
+  // myservo.write(180);
+  ir=digitalRead(27);
+  Serial.print("ir:");
+  Serial.println(ir);
+  
+  
+  
+if(ir==1){
+     Serial.println ("     Waste   Segregation ");
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print(" SMART  WASTE ");
+    lcd.setCursor(0,1);
+    lcd.print(" SEGREGATOR");
+    delay(200);
+  }
+  if(ir==0){
+  f=1;
+    Serial.println("Object detcted");
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print(" OBJECT DETECTED");
+    delay(200);
+  }
+  if(f==1){
+  unsigned long startTime=millis();
+  while(millis() - startTime<5000){
+  
+  metal=digitalRead(14);
+  Serial.print("metal:");
+  Serial.println(metal);
+
+  wet=digitalRead(13);
+  Serial.print("wet:");
+  Serial.println(wet);
+  if(wet==0){
+    w_f=1;
+    break;
+    }
+   else if(metal==1){
+    m_f=1;
+    break;}    
+  }
+if(f==1&&w_f==1&&m_f==0){
+     lcd.clear();
+     lcd.setCursor(0,0);
+     lcd.print("WET WASTE");
+     myservo.attach(25,500,2500);
+     delay(500);
+     myservo.write(90);
+     delay(1000);
+     myservo.detach();
+     Serial.println("Wet Waste");
+     myservo1.write(65);
+     delay(2000);
+     myservo1.write(0);
+     delay(1000);
+     f=0;
+     w_f=0;
+  }
+       
+if(f==1&&w_f==0&&m_f==1){
+     lcd.clear();
+     lcd.setCursor(0,0);
+     lcd.print("METAL WASTE");
+     myservo.attach(25,500,2500);
+     delay(500);
+     myservo.write(180);
+     delay(1000);
+     myservo.detach();
+     
+     Serial.println("Metal Waste");
+     myservo1.write(65);
+     delay(1000);
+     myservo1.write(0);
+     delay(1000);
+     f=0;
+     m_f=0;
+  }
+if((m_f==0)&&(w_f==0)&&(f==1)){
+ 
+     lcd.clear();
+     lcd.setCursor(0,0);
+     lcd.print("DRY WASTE");
+     myservo.attach(25,500,2500);
+     delay(500);
+     myservo.write(0);
+     delay(1000);
+     myservo.detach();
+     Serial.println("Dry Waste");
+     myservo1.write(65);
+     delay(1000);
+     myservo1.write(0);
+     delay(1000);
+     f=0;
+  }
+}
+}
